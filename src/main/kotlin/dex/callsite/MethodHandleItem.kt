@@ -1,5 +1,6 @@
-package dex
+package dex.callsite
 
+import dex.DexFile
 import java.nio.ByteBuffer
 
 class MethodHandleItem(dexFile: DexFile, byteBuffer: ByteBuffer) {

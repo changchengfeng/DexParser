@@ -20,7 +20,7 @@ class HeaderItem {
 
     var link_size_: Int = 0    // unused
     var link_off_: Int = 0     // unused
-    var map_off_: Int = 0   // unused
+    var map_off_: Int = 0
 
     var string_ids_size_: Int = 0   // number of StringIds
     var string_ids_off_: Int = 0    // file offset of StringIds array

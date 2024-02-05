@@ -20,9 +20,9 @@ class EncodedField(val dexFile: DexFile, byteBuffer: ByteBuffer) {
     }
 
     override fun toString(): String {
-        return "EncodedField(\n" +
-                "       access_flags $access_flags\n" +
-                "       field_idx_diff #$field_idx_diff ${dexFile.fieldIdItems[field_idx_diff]}\n" +
-                ")"
+        return """
+EncodedField ( access_flags $access_flags
+              field_idx_diff #$field_idx_diff ${dexFile.fieldIdItems[field_idx_diff]} )
+               """
     }
 }

@@ -22,6 +22,5 @@ enum class ValueType(val value: u1) {
 
     companion object {
         fun getValueTypeBy(value: u1) = values().find { it.value == value }!!
-
     }
 }

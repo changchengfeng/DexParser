@@ -47,13 +47,16 @@ class ClassDataItem(dexFile: DexFile, byteBuffer: ByteBuffer) {
     }
 
     override fun toString(): String {
-        return "\n######################################################################################################################################\n" +
-                "ClassDataItem(\n" +
-                "       static_fields = \n${static_fields?.toPrint(2) ?: " ==null "}\n" +
-                "       instance_fields = \n${instance_fields?.toPrint(2) ?: " ==null "}\n" +
-                "       direct_methods = \n${direct_methods?.toPrint(2) ?: " ==null "}\n" +
-                "       virtual_methods = \n${virtual_methods?.toPrint(2) ?: " ==null "}\n" +
-                ")" +
-                "\n######################################################################################################################################\n"
+        return """
+    ###################################################################################################################
+ClassDataItem(
+    static_fields = ${static_fields?.toPrint() ?: " ==null "}
+    instance_fields = ${instance_fields?.toPrint() ?: " ==null "}
+    direct_methods = ${direct_methods?.toPrint() ?: " ==null "}
+    virtual_methods = ${virtual_methods?.toPrint() ?: " ==null "} 
+    )
+    ####################################################################################################################
+
+              """
     }
 }

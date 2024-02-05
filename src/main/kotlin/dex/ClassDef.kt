@@ -50,22 +50,27 @@ class ClassDef(val dexFile: DexFile, byteBuffer: ByteBuffer) {
     }
 
     override fun toString(): String {
-        return "\n*****************************************************************************************************************************************************************************\n" +
-                "ClassDef(\n" +
-                "           class_idx = #$class_idx  ${dexFile.typeIdItems[class_idx]}\n" +
-                "           access_flags #$access_flags \n" +
-                if (superclass_idx >= 0)
-                    "           superclass_idx #${superclass_idx} ${dexFile.typeIdItems[superclass_idx]} \n"
-                else
-                    "           superclass_idx #${superclass_idx} \n"
-
-                "           source_file_idx #$source_file_idx ${dexFile.stringDataItems[source_file_idx]} \n" +
-                "           interfacesList = ${interfacesList?.also { } ?: " null"} \n" +
-                "           annotationsDirectoryItem ${annotationsDirectoryItem?.also { } ?: " null"}\n" +
-                "           classDataItem = ${classDataItem?.also { } ?: " null"}\n" +
-                "           static_values = ${encodedArrayItem?.also { } ?: " null"}\n" +
-                ")" +
-                "\n*****************************************************************************************************************************************************************************\n\n\n"
+        return """
+            
+*****************************************************************************************************************************************************************************"
+ClassDef(
+    class_idx = #$class_idx  ${dexFile.typeIdItems[class_idx]}
+    access_flags #$access_flags
+${
+            if (superclass_idx >= 0)
+                "    superclass_idx #${superclass_idx} ${dexFile.typeIdItems[superclass_idx]}"
+            else
+                "    superclass_idx #${superclass_idx}"
+        }
+    source_file_idx #$source_file_idx ${dexFile.stringDataItems[source_file_idx]}
+    interfacesList = ${interfacesList?.also { } ?: " null"}
+    annotationsDirectoryItem ${annotationsDirectoryItem?.also { } ?: " null"}
+    classDataItem = ${classDataItem?.also { } ?: " null"}
+    static_values = ${encodedArrayItem?.also { } ?: " null"}
+)
+"*****************************************************************************************************************************************************************************"
+            
+        """
     }
 
 }

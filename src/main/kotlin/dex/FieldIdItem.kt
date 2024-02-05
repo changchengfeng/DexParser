@@ -1,6 +1,5 @@
 package dex
 
-import dex.u2
 import java.nio.ByteBuffer
 
 class FieldIdItem(val dexFile: DexFile, byteBuffer: ByteBuffer) {
@@ -15,10 +14,12 @@ class FieldIdItem(val dexFile: DexFile, byteBuffer: ByteBuffer) {
     }
 
     override fun toString(): String {
-        return "FieldIdItem(\n " +
-                "       class_idx_ #$class_idx_ ${dexFile.typeIdItems[class_idx_.toInt()]}\n" +
-                "       type_idx_ #$type_idx_ ${dexFile.typeIdItems[type_idx_.toInt()]}\n" +
-                "       name_idx_ #$name_idx_ ${dexFile.stringDataItems[name_idx_]}" +
-                ")"
+
+        return """
+FieldIdItem( 
+          class_idx_ #$class_idx_ ${dexFile.typeIdItems[class_idx_.toInt()]}
+          type_idx_ #$type_idx_ ${dexFile.typeIdItems[type_idx_.toInt()]}
+          name_idx_ #$name_idx_ ${dexFile.stringDataItems[name_idx_]} )
+               """
     }
 }

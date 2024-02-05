@@ -1,5 +1,7 @@
 package dex
 
+import dex.code.OpcodeType
+import dex.code.Opcodes
 import okio.BufferedSink
 import okio.BufferedSource
 import okio.ByteString
@@ -10,28 +12,12 @@ import java.nio.ByteOrder
 import kotlin.experimental.and
 
 
-
-
 typealias u2 = Short
 typealias u1 = Byte
 typealias u4 = Int
 typealias u1Array = ByteArray
 typealias u2Array = ShortArray
 
-sealed class BooleanExt<out T>
-object Otherwise : BooleanExt<Nothing>()
-class WithData<T>(val data: T) : BooleanExt<T>()
-
-inline fun <T> Boolean.yes(block: () -> T) =
-    when {
-        this -> {
-            WithData(block())
-        }
-
-        else -> {
-            Otherwise
-        }
-    }
 
 fun ByteString.toInt(order: ByteOrder = ByteOrder.BIG_ENDIAN): Int {
     if (size == 0) {
@@ -103,39 +89,6 @@ fun BufferedSource.readDouble(): Double {
     return Double.fromBits(readLong())
 }
 
-inline fun <T> Boolean.no(block: () -> T) = when {
-    this -> Otherwise
-    else -> {
-        WithData(block())
-    }
-}
-
-inline fun <T> BooleanExt<T>.otherwise(block: () -> T): T =
-    when (this) {
-        is Otherwise -> block()
-        is WithData -> this.data
-    }
-
-
-fun arrayToStr(arrayOfAnys: Array<out Any?>, tag: String, level: Int = 3): String {
-    val stringBuffer = StringBuilder()
-    val tab = StringBuilder()
-
-    for (it in arrayOfAnys.indices) {
-        if (it != 0) {
-            tab.clear()
-            for (it in 0..level) {
-                tab.append("    ")
-            }
-        }
-        stringBuffer.append("${tab}$tag[${it}] = ${arrayOfAnys[it]}")
-        if (it != arrayOfAnys.size - 1) {
-            stringBuffer.append("\n")
-        }
-    }
-    return stringBuffer.toString()
-}
-
 fun u1Array.readInt(index: Int): Int {
     return byteArrayOf(this[index], this[index + 1], this[index + 2], this[index + 3]).toByteString()
         .toInt()
@@ -151,7 +104,6 @@ inline fun <T> Array<out T>.printToString(): String {
     builder.append("..........................................$componentType end........................................................")
     return builder.toString()
 }
-
 
 
 fun BufferedSource.readSignedLeb128(): Int {
@@ -234,12 +186,9 @@ fun BufferedSink.writeSignedLeb128(value: Int) {
 }
 
 
-fun Array<out Any>.toPrint(tab: Int = 0): String {
+fun Array<out Any>.toPrint(): String {
     val builder = StringBuilder()
     for (it in this.indices) {
-        for (int in 0 until tab) {
-            builder.append("        ")
-        }
         builder.append("#${it} = ${this[it]}")
         if (it != (size - 1)) {
             builder.append("\n")
@@ -247,6 +196,7 @@ fun Array<out Any>.toPrint(tab: Int = 0): String {
     }
     return builder.toString()
 }
+
 fun List<out Any>.toPrintList(tab: Int = 0): String {
     val builder = StringBuilder()
     for (it in this.indices) {
@@ -261,10 +211,411 @@ fun List<out Any>.toPrintList(tab: Int = 0): String {
     return builder.toString()
 }
 
-fun Array<ByteArray>.toPrintln(): String {
+
+fun BufferedSource.toPrintln(dexFile: DexFile): String {
     val builder = StringBuilder()
-    for (it in this.indices) {
-        builder.append("#${it} = ${this[it].toByteString().hex()}\n")
+
+    while (!exhausted()) {
+        val opcodes = Opcodes.getOpcodesTypeBy(readByte().toUByte())
+        println(" opcodes = $opcodes")
+        when (opcodes.type) {
+            OpcodeType.T10x -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("ØØ${readByte()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T12x -> {
+                val byte = readByte()
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${byte and 0x0f.toByte()},")
+                builder.append("v${byte and 0xf0.toByte()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T11n -> {
+                val byte = readByte()
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${byte and 0x0f.toByte()},")
+                builder.append("#${byte and 0xf0.toByte()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T11x -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T10t -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("+${readByte()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T20t -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("ØØ${readByte()},")
+                builder.append("+${readShortLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T22x -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("v${readShortLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21t -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("+${readShortLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21s -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("#${readShortLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21h_1 -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("#${readShortLe()}")
+                builder.append(" 0000")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21h_2 -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("#${readShortLe()}")
+                builder.append(" 00000000")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21c_type -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.typeIdItems[shortLe.toInt()]} ,")
+                builder.append("type@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21c_field -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.fieldIdItems[shortLe.toInt()]} ,")
+                builder.append("field@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21c_method_handle -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.methodHandles?.get(shortLe.toInt())} ,")
+                builder.append("method_handle@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21c_proto -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.protoIdItems[shortLe.toInt()]} ,")
+                builder.append("proto@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T21c_string -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.stringDataItems[shortLe.toInt()]} ,")
+                builder.append("string@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T23x -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("v${readByte()},")
+                builder.append("v${readByte()},")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T22b -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("v${readByte()},")
+                builder.append("#${readByte()},")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T22t -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val byte = readByte()
+                builder.append("v${byte and 0x0f.toByte()},")
+                builder.append("v${byte and 0xf0.toByte()},")
+                builder.append("+${readShortLe()},")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T22s -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val byte = readByte()
+                builder.append("v${byte and 0x0f.toByte()},")
+                builder.append("v${byte and 0xf0.toByte()},")
+                builder.append("#${readShortLe()},")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T22c_type -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val byte = readByte()
+                builder.append("v${byte and 0x0f.toByte()},")
+                builder.append("v${byte and 0xf0.toByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.typeIdItems[shortLe.toInt()]} ,")
+                builder.append("type@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T22c_field -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val byte = readByte()
+                builder.append("v${byte and 0x0f.toByte()},")
+                builder.append("v${byte and 0xf0.toByte()},")
+                val shortLe = readShortLe()
+                builder.append("${dexFile.fieldIdItems[shortLe.toInt()]} ,")
+                builder.append("field@${shortLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T30t -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("ØØ${readByte()},")
+                builder.append("+${readIntLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T32x -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("ØØ${readByte()},")
+                builder.append("v${readShortLe()}")
+                builder.append("v${readShortLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T31i -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("#${readIntLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T31t -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                builder.append("+${readIntLe()}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T31c -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                builder.append("v${readByte()},")
+                val readIntLe = readIntLe()
+                builder.append("${dexFile.stringDataItems[readIntLe]}")
+                builder.append("string@${readIntLe}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T35c -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val byte = readByte()
+                val A = byte and 0xf0.toByte()
+                val G = byte and 0x0f.toByte()
+                val BBBB = readShortLe()
+                val byte2 = readByte()
+                val D = byte2 and 0xf0.toByte()
+                val C = byte2 and 0x0f.toByte()
+                val byte3 = readByte()
+                val F = byte3 and 0xf0.toByte()
+                val E = byte3 and 0x0f.toByte()
+                var refType: String
+                var refValue: String
+                if (opcodes == Opcodes.filledNewArray) {
+                    refType = "type"
+                    refValue = "${dexFile.typeIdItems[BBBB.toInt()]}"
+                } else if (opcodes == Opcodes.invokeCustom) {
+                    refType = "call_site"
+                    refValue = "${dexFile.callSiteIds?.get(BBBB.toInt())}"
+                } else {
+                    refType = "meth"
+                    refValue = "${dexFile.methodIdItems[BBBB.toInt()]}"
+                }
+                when (A) {
+                    0.toByte() -> {}
+                    1.toByte() -> {
+                        builder.append("v${C},")
+                    }
+
+                    2.toByte() -> {
+                        builder.append("v${C},v${D},")
+                    }
+
+                    3.toByte() -> {
+                        builder.append("v${C},v${D},v${E},")
+                    }
+
+                    4.toByte() -> {
+                        builder.append("v${C},v${D},v${E},v${F},")
+                    }
+
+                    5.toByte() -> {
+                        builder.append("v${C},v${D},v${E},v${F},v${G},")
+                    }
+                }
+                builder.append("${refValue},")
+                builder.append("${refType}@${BBBB}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T3rc -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val AA = readByte()
+                val BBBB = readShortLe()
+                val CCCC = readShortLe()
+                val NNNN = (CCCC + AA - 1).toShort()
+                builder.append("v${CCCC} ,")
+                builder.append("v${NNNN} ,")
+                var refType: String
+                var refValue: String
+                if (opcodes == Opcodes.filledNewArrayRange) {
+                    refType = "type"
+                    refValue = "${dexFile.typeIdItems[BBBB.toInt()]}"
+                } else if (opcodes == Opcodes.invokeCustomRange) {
+                    refType = "call_site"
+                    refValue = "${dexFile.callSiteIds?.get(BBBB.toInt())}"
+                } else {
+                    refType = "meth"
+                    refValue = "${dexFile.methodIdItems[BBBB.toInt()]}"
+                }
+                builder.append("${refValue},")
+                builder.append("${refType}@${BBBB}")
+                builder.append(")\n")
+            }
+
+
+            OpcodeType.T45cc -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val byte = readByte()
+                val A = byte and 0xf0.toByte()
+                val G = byte and 0x0f.toByte()
+                val BBBB = readShortLe()
+                val byte2 = readByte()
+                val D = byte2 and 0xf0.toByte()
+                val C = byte2 and 0x0f.toByte()
+                val byte3 = readByte()
+                val F = byte3 and 0xf0.toByte()
+                val E = byte3 and 0x0f.toByte()
+                val HHHH = readShortLe()
+                when (A) {
+                    1.toByte() -> {
+                        builder.append("v${C},")
+                    }
+
+                    2.toByte() -> {
+                        builder.append("v${C},v${D},")
+                    }
+
+                    3.toByte() -> {
+                        builder.append("v${C},v${D},v${E},")
+                    }
+
+                    4.toByte() -> {
+                        builder.append("v${C},v${D},v${E},v${F},")
+                    }
+
+                    5.toByte() -> {
+                        builder.append("v${C},v${D},v${E},v${F},v${G},")
+                    }
+                }
+                builder.append("${dexFile.protoIdItems[HHHH.toInt()]},")
+                builder.append("proto@${HHHH}")
+                builder.append("${dexFile.methodIdItems[BBBB.toInt()]},")
+                builder.append("meth@${BBBB}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T4rcc -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val AA = readByte()
+                val BBBB = readShortLe()
+                val CCCC = readShortLe()
+                val HHHH = readShortLe()
+                val NNNN = CCCC + AA - 1
+                builder.append("v${CCCC},")
+                builder.append("v${NNNN},")
+                builder.append("${dexFile.methodIdItems[BBBB.toInt()]},")
+                builder.append("meth@${BBBB}")
+                builder.append("${dexFile.protoIdItems[HHHH.toInt()]},")
+                builder.append("proto@${HHHH}")
+                builder.append(")\n")
+            }
+
+            OpcodeType.T51l -> {
+                builder.append(opcodes.name)
+                builder.append("(")
+                val AA = readByte()
+                val BBBBlo = readShortLe()
+                val BBBBBBBB = readIntLe()
+                val BBBBhi = readShortLe()
+                val BBBBBBBBBBBBBBBB =
+                    (BBBBhi.toLong() shl 48) + (BBBBBBBB.toLong() shl 16) +
+                            BBBBlo.toLong()
+                builder.append("v${AA},")
+                builder.append("#+ $BBBBBBBBBBBBBBBB")
+                builder.append(")\n")
+            }
+        }
     }
     return builder.toString()
 }

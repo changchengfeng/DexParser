@@ -14,6 +14,6 @@ class TypeList(dexFile: DexFile, byteBuffer: ByteBuffer) {
     }
 
     override fun toString(): String {
-        return "TypeList(\n${list.toPrint(2)})"
+        return "TypeList(${list.toPrint()})"
     }
 }

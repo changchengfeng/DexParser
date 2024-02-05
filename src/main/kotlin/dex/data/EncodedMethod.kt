@@ -30,10 +30,12 @@ class EncodedMethod(val dexFile: DexFile, byteBuffer: ByteBuffer) {
     }
 
     override fun toString(): String {
-        return "EncodedMethod(\n" +
-                "        access_flags $access_flags\n" +
-                "        method_idx_diff #$method_idx_diff ${dexFile.methodIdItems[method_idx_diff]}\n" +
-                "        codeItem $codeItem \n" +
-                ")"
+
+
+        return """
+EncodedMethod( access_flags $access_flags
+       method_idx_diff #$method_idx_diff ${dexFile.methodIdItems[method_idx_diff]}
+       codeItem $codeItem )
+                """
     }
 }
