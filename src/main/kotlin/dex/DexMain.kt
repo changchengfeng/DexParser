@@ -4,7 +4,7 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 import java.io.PrintWriter
 
-const val path = "classes4.dex"
+const val path = "classes.dex"
 const val out = "out.log"
 
 fun main() {

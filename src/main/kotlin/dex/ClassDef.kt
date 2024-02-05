@@ -56,13 +56,8 @@ class ClassDef(val dexFile: DexFile, byteBuffer: ByteBuffer) {
 ClassDef(
     class_idx = #$class_idx  ${dexFile.typeIdItems[class_idx]}
     access_flags #$access_flags
-${
-            if (superclass_idx >= 0)
-                "    superclass_idx #${superclass_idx} ${dexFile.typeIdItems[superclass_idx]}"
-            else
-                "    superclass_idx #${superclass_idx}"
-        }
-    source_file_idx #$source_file_idx ${dexFile.stringDataItems[source_file_idx]}
+    superclass_idx #${superclass_idx} ${if (superclass_idx >= 0) dexFile.typeIdItems[superclass_idx] else ""}
+    source_file_idx #${source_file_idx} ${if (source_file_idx >= 0) dexFile.stringDataItems[source_file_idx] else ""}
     interfacesList = ${interfacesList?.also { } ?: " null"}
     annotationsDirectoryItem ${annotationsDirectoryItem?.also { } ?: " null"}
     classDataItem = ${classDataItem?.also { } ?: " null"}

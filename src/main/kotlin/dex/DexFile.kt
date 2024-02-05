@@ -112,7 +112,7 @@ class DexFile(writer: PrintWriter, fileHandle: FileHandle) {
             data = ByteArray(headerItem.data_size_)
             byteBuffer.get(data)
             writer.println("data_size_ : ")
-            writer.println(data?.toByteString()?.hex())
+//            writer.println(data?.toByteString()?.hex())
             writer.println("------------------------------------------------------------------------------------------------------------------------------------------------------------------")
         }
         if (headerItem.link_off_ != 0) {
